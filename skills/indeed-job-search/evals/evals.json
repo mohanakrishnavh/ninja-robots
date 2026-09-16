@@ -1,0 +1,26 @@
+{
+  "skill_name": "indeed-job-search",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Find me contract data analyst jobs on Indeed within 25 miles of Austin, TX, posted in the last 3 days.",
+      "expected_output": "Uses IndeedJobClient.search with keywords like 'data analyst', location='Austin, TX', job_type='contract', radius_miles=25, date_posted='last_3', and returns a list of job postings with title, company, location, and URL for each.",
+      "files": [],
+      "assertions": []
+    },
+    {
+      "id": 2,
+      "prompt": "I'm looking to relocate to the UK — can you search Indeed's UK site for remote part-time customer support roles?",
+      "expected_output": "Uses IndeedJobClient with country_domain='uk.indeed.com', keywords covering 'customer support', remote_only=True, job_type='part_time', and returns matching postings.",
+      "files": [],
+      "assertions": []
+    },
+    {
+      "id": 3,
+      "prompt": "Can you summarize this PDF resume for me?",
+      "expected_output": "Does not invoke the indeed-job-search skill — this request is document summarization, not a job search.",
+      "files": [],
+      "assertions": []
+    }
+  ]
+}

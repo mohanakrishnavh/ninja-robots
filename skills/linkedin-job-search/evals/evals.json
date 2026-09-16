@@ -1,0 +1,26 @@
+{
+  "skill_name": "linkedin-job-search",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "I'm graduating in December with a CS degree and want to find LinkedIn postings for entry-level software engineer roles in Seattle posted in the last week. Can you pull a list for me?",
+      "expected_output": "Uses LinkedInJobClient.search with keywords like 'software engineer', location='Seattle, WA' (or similar), experience_level='entry_level', date_posted='past_week', and returns a list of job postings with title, company, location, and URL for each.",
+      "files": [],
+      "assertions": []
+    },
+    {
+      "id": 2,
+      "prompt": "Search LinkedIn for remote director-level product management jobs. I only want full-time roles.",
+      "expected_output": "Uses LinkedInJobClient.search with keywords covering 'product management' (or 'product manager'), remote_only=True, experience_level='director', job_type='full_time', and returns matching postings.",
+      "files": [],
+      "assertions": []
+    },
+    {
+      "id": 3,
+      "prompt": "What's the weather like in Chicago today?",
+      "expected_output": "Does not invoke the linkedin-job-search skill — this request is unrelated to job search.",
+      "files": [],
+      "assertions": []
+    }
+  ]
+}
