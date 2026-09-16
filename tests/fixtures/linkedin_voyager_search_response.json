@@ -1,0 +1,26 @@
+{
+  "included": [
+    {
+      "$type": "com.linkedin.voyager.dash.jobs.JobPosting",
+      "entityUrn": "urn:li:fsd_jobPosting:9876543210",
+      "title": "Staff Software Engineer",
+      "formattedLocation": "Remote",
+      "companyDetails": {
+        "company": {
+          "name": "Hooli"
+        }
+      }
+    },
+    {
+      "$type": "com.linkedin.voyager.dash.jobs.JobPosting",
+      "entityUrn": "urn:li:fsd_jobPosting:1122334455",
+      "title": "Engineering Manager",
+      "formattedLocation": "San Francisco, CA",
+      "companyDetails": {
+        "company": {
+          "name": "Pied Piper"
+        }
+      }
+    }
+  ]
+}

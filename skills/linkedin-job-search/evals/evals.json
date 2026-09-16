@@ -21,6 +21,13 @@
       "expected_output": "Does not invoke the linkedin-job-search skill — this request is unrelated to job search.",
       "files": [],
       "assertions": []
+    },
+    {
+      "id": 4,
+      "prompt": "I've set LINKEDIN_LI_AT_COOKIE in my environment. Search LinkedIn as me for staff-level backend engineer roles near Boston.",
+      "expected_output": "Uses LinkedInJobClient() without hardcoding any credential, relying on it to pick up LINKEDIN_LI_AT_COOKIE from the environment and switch to authenticated search automatically (client.is_authenticated is True). Does not print or log the cookie value.",
+      "files": [],
+      "assertions": []
     }
   ]
 }

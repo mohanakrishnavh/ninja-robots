@@ -1,6 +1,10 @@
 {
   "linkedin": {
     "base_search_url": "https://www.linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/search",
+    "feed_url": "https://www.linkedin.com/feed/",
+    "voyager_search_url": "https://www.linkedin.com/voyager/api/search/dash/clusters",
+    "voyager_typeahead_url": "https://www.linkedin.com/voyager/api/typeahead/hitsV2",
+    "voyager_decoration_id": "com.linkedin.voyager.dash.deco.jobs.search.JobSearchCardsCollectionLite-16",
     "page_size": 25,
     "default_request_delay_seconds": 1.0,
     "experience_levels": {
@@ -28,6 +32,7 @@
   },
   "indeed": {
     "base_search_url": "https://www.indeed.com/jobs",
+    "publisher_api_url": "https://api.indeed.com/ads/apisearch",
     "default_country_domain": "www.indeed.com",
     "default_request_delay_seconds": 1.0,
     "page_size": 15,

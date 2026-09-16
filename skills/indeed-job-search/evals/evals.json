@@ -21,6 +21,13 @@
       "expected_output": "Does not invoke the indeed-job-search skill — this request is document summarization, not a job search.",
       "files": [],
       "assertions": []
+    },
+    {
+      "id": 4,
+      "prompt": "I have an Indeed Publisher API key set as INDEED_PUBLISHER_ID. Use it to search for full-time DevOps engineer jobs in Denver.",
+      "expected_output": "Uses IndeedJobClient() without hardcoding any credential, relying on it to pick up INDEED_PUBLISHER_ID from the environment and switch to the Publisher API automatically (client.is_authenticated is True). Does not print or log the publisher ID.",
+      "files": [],
+      "assertions": []
     }
   ]
 }

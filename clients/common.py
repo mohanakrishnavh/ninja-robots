@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import os
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional
@@ -14,6 +15,15 @@ def load_platform_config(platform: str) -> dict:
     with CONFIG_PATH.open("r", encoding="utf-8") as f:
         config = json.load(f)
     return config[platform]
+
+
+def get_env_credential(var_name: str) -> Optional[str]:
+    """Read a credential from an environment variable, or None if unset.
+
+    Credentials must never be hardcoded in source, config, or fixtures --
+    always pass them via environment variables at runtime.
+    """
+    return os.environ.get(var_name) or None
 
 
 @dataclass

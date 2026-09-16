@@ -1,0 +1,22 @@
+{
+  "results": [
+    {
+      "jobtitle": "Senior Data Analyst",
+      "company": "Initech",
+      "formattedLocation": "Austin, TX",
+      "url": "https://www.indeed.com/viewjob?jk=abc123",
+      "jobkey": "abc123",
+      "date": "Mon, 01 May 2024 00:00:00 GMT",
+      "snippet": "We are looking for a senior data analyst..."
+    },
+    {
+      "jobtitle": "Data Analyst II",
+      "company": "Umbrella Corp",
+      "formattedLocation": "Remote",
+      "url": "https://www.indeed.com/viewjob?jk=def456",
+      "jobkey": "def456",
+      "date": "Tue, 02 May 2024 00:00:00 GMT",
+      "snippet": "Join our analytics team..."
+    }
+  ]
+}
