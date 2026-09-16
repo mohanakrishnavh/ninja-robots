@@ -1,0 +1,49 @@
+{
+  "linkedin": {
+    "base_search_url": "https://www.linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/search",
+    "page_size": 25,
+    "default_request_delay_seconds": 1.0,
+    "experience_levels": {
+      "internship": "1",
+      "entry_level": "2",
+      "associate": "3",
+      "mid_senior_level": "4",
+      "director": "5",
+      "executive": "6"
+    },
+    "job_types": {
+      "full_time": "F",
+      "part_time": "P",
+      "contract": "C",
+      "temporary": "T",
+      "volunteer": "V",
+      "internship": "I"
+    },
+    "date_posted": {
+      "any_time": "",
+      "past_month": "r2592000",
+      "past_week": "r604800",
+      "past_24_hours": "r86400"
+    }
+  },
+  "indeed": {
+    "base_search_url": "https://www.indeed.com/jobs",
+    "default_country_domain": "www.indeed.com",
+    "default_request_delay_seconds": 1.0,
+    "page_size": 15,
+    "job_types": {
+      "full_time": "fulltime",
+      "part_time": "parttime",
+      "contract": "contract",
+      "temporary": "temporary",
+      "internship": "internship"
+    },
+    "date_posted_days": {
+      "any_time": null,
+      "last_1": 1,
+      "last_3": 3,
+      "last_7": 7,
+      "last_14": 14
+    }
+  }
+}
