@@ -12,7 +12,7 @@ Use `clients/linkedin_client.py`'s `LinkedInJobClient` to search LinkedIn job li
 - **No credentials (default):** searches as an anonymous guest via LinkedIn's public "jobs-guest" endpoint.
 - **`LINKEDIN_LI_AT_COOKIE` set:** searches as that logged-in user via LinkedIn's internal Voyager API, for richer/less rate-limited results. Set this environment variable to the account's `li_at` session cookie value (from browser dev tools) — **never hardcode it in code or commit it to source control.** This is automated use of a personal account against LinkedIn's Terms of Service and can get the account rate-limited or restricted; only do this with an account and request volume the user is comfortable with.
 
-`client.is_authenticated` reports which mode is active.
+`client.is_authenticated` reports whether a credential is configured (i.e. which mode `search()` will use). The actual CSRF token exchange with LinkedIn is fetched lazily on the first `search()` call, not when `LinkedInJobClient()` is constructed — so building a client is always cheap and side-effect-free, and a bad/expired cookie only surfaces (as a `RuntimeError`) once you actually search, not before. The token is then cached on the client for subsequent calls.
 
 ## Usage
 

@@ -10,7 +10,9 @@ Two modes, chosen automatically based on whether credentials are available:
   itself calls after login. This needs your account's `li_at` session
   cookie value (copy it from your browser's dev tools -> Application ->
   Cookies while logged into linkedin.com). Never hardcode this value --
-  set it as the LINKEDIN_LI_AT_COOKIE environment variable instead.
+  set it as the LINKEDIN_LI_AT_COOKIE environment variable instead. The
+  CSRF token this mode needs is fetched lazily, on the first search()
+  call, not when the client is constructed.
 
 Both modes hit endpoints LinkedIn hasn't published or versioned for
 third-party use. LinkedIn may change the markup/schema at any time, and
@@ -48,18 +50,29 @@ class LinkedInJobClient:
         self.request_delay = self._config["default_request_delay_seconds"]
 
         self._li_at_cookie = li_at_cookie or get_env_credential(LI_AT_COOKIE_ENV_VAR)
-        self.authenticated = False
-        if self._li_at_cookie:
-            self._bootstrap_authenticated_session()
+        self._session_ready = False
 
     @property
     def is_authenticated(self) -> bool:
-        return self.authenticated
+        """Whether an li_at credential is configured, so search() will use
+        authenticated mode. The CSRF token itself is fetched lazily -- on
+        the first search() call, not at construction time -- so this can
+        be True before that network round trip has actually happened."""
+        return bool(self._li_at_cookie)
 
-    def _bootstrap_authenticated_session(self) -> None:
+    def _ensure_authenticated_session(self) -> None:
         """Attach the li_at cookie and derive the CSRF token LinkedIn's
         internal API requires on every request, by visiting the feed page
-        the way a logged-in browser would right after authenticating."""
+        the way a logged-in browser would right after authenticating.
+
+        Called lazily from search() rather than __init__, so constructing
+        a client with a credential configured doesn't spend a network
+        round trip (or fail loudly on a bad cookie) until it's actually
+        needed. Cached after the first successful call.
+        """
+        if self._session_ready:
+            return
+
         self.session.cookies.set("li_at", self._li_at_cookie, domain=".linkedin.com")
         response = self.session.get(self._config["feed_url"], timeout=10)
         response.raise_for_status()
@@ -78,7 +91,7 @@ class LinkedInJobClient:
                 "x-li-lang": "en_US",
             }
         )
-        self.authenticated = True
+        self._session_ready = True
 
     def search(
         self,
@@ -99,7 +112,8 @@ class LinkedInJobClient:
         Voyager search when a valid li_at cookie was provided, otherwise
         falls back to the public guest search.
         """
-        if self.authenticated:
+        if self._li_at_cookie:
+            self._ensure_authenticated_session()
             return self._search_authenticated(
                 keywords, location, remote_only, experience_level, job_type, date_posted, max_results
             )

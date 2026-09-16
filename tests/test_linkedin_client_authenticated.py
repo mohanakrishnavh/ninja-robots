@@ -1,8 +1,9 @@
 """Dedicated eval/test suite for linkedin-job-search's authenticated mode.
 
 Covers reading the LINKEDIN_LI_AT_COOKIE credential from the environment
-(never hardcoded), the authenticated-session bootstrap, and Voyager search
-response parsing -- all against fixtures, no live network calls.
+(never hardcoded), the lazy CSRF-token bootstrap (fetched on first
+search() call, not at construction time), and Voyager search response
+parsing -- all against fixtures, no live network calls.
 """
 from __future__ import annotations
 
@@ -34,52 +35,80 @@ def test_no_credential_falls_back_to_guest_mode(monkeypatch):
     assert client.is_authenticated is False
 
 
-def test_reads_credential_from_env_var_not_hardcoded(monkeypatch):
+def test_credential_present_reports_authenticated_without_any_network_call(monkeypatch):
+    """Constructing the client must not make a network call -- the CSRF
+    token bootstrap is deferred until search() actually needs it."""
     monkeypatch.setenv(LI_AT_COOKIE_ENV_VAR, "fake-li-at-value")
-    feed_response = _fake_response(text="", cookies={"JSESSIONID": '"ajax:1234567890"'})
 
-    with patch("clients.linkedin_client.requests.Session.get", return_value=feed_response):
+    with patch("clients.linkedin_client.requests.Session.get") as mock_get:
         client = LinkedInJobClient()
 
     assert client.is_authenticated is True
-    assert client.session.headers["csrf-token"] == "ajax:1234567890"
-    assert client.session.cookies.get("li_at") == "fake-li-at-value"
+    mock_get.assert_not_called()
 
 
 def test_constructor_arg_overrides_env_var(monkeypatch):
     monkeypatch.setenv(LI_AT_COOKIE_ENV_VAR, "env-value")
-    feed_response = _fake_response(text="", cookies={"JSESSIONID": '"ajax:9999"'})
-
-    with patch("clients.linkedin_client.requests.Session.get", return_value=feed_response):
-        client = LinkedInJobClient(li_at_cookie="explicit-value")
-
-    assert client.session.cookies.get("li_at") == "explicit-value"
+    client = LinkedInJobClient(li_at_cookie="explicit-value")
+    assert client._li_at_cookie == "explicit-value"
 
 
-def test_missing_jsessionid_raises_clear_error(monkeypatch):
-    monkeypatch.setenv(LI_AT_COOKIE_ENV_VAR, "expired-or-invalid")
-    feed_response = _fake_response(text="", cookies={})
-
-    with patch("clients.linkedin_client.requests.Session.get", return_value=feed_response):
-        with pytest.raises(RuntimeError):
-            LinkedInJobClient()
-
-
-def test_authenticated_search_parses_voyager_response(monkeypatch):
+def test_first_search_call_fetches_and_caches_the_csrf_token(monkeypatch):
     monkeypatch.setenv(LI_AT_COOKIE_ENV_VAR, "fake-li-at-value")
-    feed_response = _fake_response(text="", cookies={"JSESSIONID": '"ajax:1234567890"'})
-
-    search_body = json.loads((FIXTURES / "linkedin_voyager_search_response.json").read_text())
-    empty_body = json.loads((FIXTURES / "linkedin_voyager_empty_response.json").read_text())
-
-    with patch("clients.linkedin_client.requests.Session.get", return_value=feed_response):
-        client = LinkedInJobClient()
+    client = LinkedInJobClient()
     client.request_delay = 0
+
+    feed_response = _fake_response(text="", cookies={"JSESSIONID": '"ajax:1234567890"'})
+    empty_body = json.loads((FIXTURES / "linkedin_voyager_empty_response.json").read_text())
 
     with patch.object(
         client.session,
         "get",
-        side_effect=[_fake_response(json_body=search_body), _fake_response(json_body=empty_body)],
+        side_effect=[feed_response, _fake_response(json_body=empty_body)],
+    ) as mock_get:
+        client.search(keywords="engineer", max_results=1)
+
+    assert client.session.headers["csrf-token"] == "ajax:1234567890"
+    assert client.session.cookies.get("li_at") == "fake-li-at-value"
+    assert client._session_ready is True
+
+    # A second search reuses the cached token instead of re-fetching the feed page.
+    with patch.object(
+        client.session, "get", return_value=_fake_response(json_body=empty_body)
+    ) as mock_get_second:
+        client.search(keywords="engineer", max_results=1)
+
+    called_urls = [call.args[0] for call in mock_get_second.call_args_list]
+    assert client._config["feed_url"] not in called_urls
+
+
+def test_missing_jsessionid_raises_clear_error_on_search(monkeypatch):
+    monkeypatch.setenv(LI_AT_COOKIE_ENV_VAR, "expired-or-invalid")
+    client = LinkedInJobClient()
+
+    feed_response = _fake_response(text="", cookies={})
+    with patch.object(client.session, "get", return_value=feed_response):
+        with pytest.raises(RuntimeError):
+            client.search(keywords="engineer", max_results=1)
+
+
+def test_authenticated_search_parses_voyager_response(monkeypatch):
+    monkeypatch.setenv(LI_AT_COOKIE_ENV_VAR, "fake-li-at-value")
+    client = LinkedInJobClient()
+    client.request_delay = 0
+
+    feed_response = _fake_response(text="", cookies={"JSESSIONID": '"ajax:1234567890"'})
+    search_body = json.loads((FIXTURES / "linkedin_voyager_search_response.json").read_text())
+    empty_body = json.loads((FIXTURES / "linkedin_voyager_empty_response.json").read_text())
+
+    with patch.object(
+        client.session,
+        "get",
+        side_effect=[
+            feed_response,
+            _fake_response(json_body=search_body),
+            _fake_response(json_body=empty_body),
+        ],
     ):
         jobs = client.search(keywords="software engineer", max_results=5)
 
@@ -94,10 +123,7 @@ def test_authenticated_search_parses_voyager_response(monkeypatch):
 
 def test_resolve_geo_id_parses_typeahead_response(monkeypatch):
     monkeypatch.setenv(LI_AT_COOKIE_ENV_VAR, "fake-li-at-value")
-    feed_response = _fake_response(text="", cookies={"JSESSIONID": '"ajax:1234567890"'})
-
-    with patch("clients.linkedin_client.requests.Session.get", return_value=feed_response):
-        client = LinkedInJobClient()
+    client = LinkedInJobClient()
 
     geo_body = json.loads((FIXTURES / "linkedin_typeahead_geo_response.json").read_text())
     with patch.object(client.session, "get", return_value=_fake_response(json_body=geo_body)):
