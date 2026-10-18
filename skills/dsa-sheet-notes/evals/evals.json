@@ -1,0 +1,34 @@
+{
+  "skill_name": "dsa-sheet-notes",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "I solved a few problems this week, write the DSA notes.",
+      "expected_output": "Lists solved problems missing NOTES.md, spawns one dsa-notes-writer per problem, refreshes Code/README.md, commits only Code/.",
+      "assertions": [
+        "Runs `python3 -m clients.dsa_sheet missing` before spawning agents",
+        "Spawns dsa-notes-writer agents, up to 5 per batch",
+        "Never modifies the user's solution files",
+        "Stages only the Code/ directory when committing"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Start the two-sum problem from my A2Z sheet.",
+      "expected_output": "Runs the start command and reports the created folder path without writing a solution.",
+      "assertions": [
+        "Runs `python3 -m clients.dsa_sheet start` with the slug or id",
+        "Does not write solution code for the user"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Sync my Code folder with the latest Striver sheet.",
+      "expected_output": "Runs the sync command via Arc, leaves existing solution folders intact, and reports counts.",
+      "assertions": [
+        "Runs `python3 -m clients.dsa_sheet sync`",
+        "Does not delete existing solution folders"
+      ]
+    }
+  ]
+}

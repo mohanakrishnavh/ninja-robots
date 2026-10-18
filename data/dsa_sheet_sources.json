@@ -1,0 +1,9 @@
+{
+  "sheet_page_url": "https://takeuforward.org/prep-hub/strivers-a2z-dsa-sheet?page=sheet",
+  "sheet_api_url": "https://backend-go.takeuforward.org/api/v2/syllabus/track?type=source&key=strivers-a2z-dsa-sheet",
+  "problem_url_template": "https://takeuforward.org/prep-hub/strivers-a2z-dsa-sheet?page=sheet&open={id}",
+  "interview_prep_repo": "~/Repos/interview-prep",
+  "code_dir": "Code",
+  "ignored_files": ["README.md", "NOTES.md", ".DS_Store"],
+  "ignored_dirs": ["assets"]
+}

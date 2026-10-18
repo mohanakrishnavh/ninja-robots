@@ -83,6 +83,60 @@ def fetch_page_text(
     return None if looks_blocked(text) else text
 
 
+def fetch_json_via_page(
+    page_url: str,
+    api_url: str,
+    run: Runner = run_applescript,
+    sleep: Callable[[float], None] = time.sleep,
+    settle_seconds: float = 6.0,
+    chunk: int = 40000,
+    polls: int = 20,
+    init: Optional[dict] = None,
+) -> str:
+    """Fetch api_url from inside page_url (so the user's cookies apply); return the body text.
+
+    init is an optional fetch() options dict (e.g. method/headers/body for a POST)."""""
+    tab_id = open_tab(page_url, run)
+    try:
+        sleep(settle_seconds)
+        tab_js(
+            tab_id,
+            "window.__r=null;fetch(" + _json_str(api_url) + "," + _json_str({"credentials": "include", **(init or {})}) + ")"
+            ".then(r=>r.text()).then(t=>{window.__r=t}).catch(e=>{window.__r='ERR '+e});'started'",
+            run,
+        )
+        length = -1
+        for _ in range(polls):
+            sleep(1.5)
+            length = int(tab_js(tab_id, "window.__r===null?-1:window.__r.length", run))
+            if length >= 0:
+                break
+        if length < 0:
+            raise TimeoutError("page fetch did not complete")
+        return "".join(_unquote(tab_js(tab_id, f"window.__r.slice({i},{i + chunk})", run)) for i in range(0, length, chunk))
+    finally:
+        close_tab(tab_id, run)
+
+
+def _json_str(value: str) -> str:
+    import json
+
+    return json.dumps(value)
+
+
+def _unquote(raw: str) -> str:
+    """Arc returns JS strings JSON-quoted; undo that when present."""
+    import json
+
+    raw = raw.strip()
+    if raw.startswith('"'):
+        try:
+            return json.loads(raw)
+        except ValueError:
+            pass
+    return raw
+
+
 if __name__ == "__main__":  # CLI: python -m clients.arc_browser <url>
     import sys
 
