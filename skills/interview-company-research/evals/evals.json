@@ -1,0 +1,26 @@
+{
+  "skill_name": "interview-company-research",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Refresh my interview company research for Senior SWE and FDE roles.",
+      "expected_output": "Runs the ranking step, spawns one interview-company-researcher agent per top company in parallel batches, regenerates companies/INDEX.md, and commits only companies/ in interview-prep.",
+      "assertions": [
+        "Spawns multiple interview-company-researcher agents in a single message per batch",
+        "Writes companies/_ranking.md and companies/INDEX.md",
+        "Only stages the companies/ directory when committing",
+        "Does not attempt to bypass login walls or CAPTCHAs"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Add Stripe to my company interview notes: salaries, rounds, and questions.",
+      "expected_output": "Spawns a single researcher for Stripe that writes companies/stripe/README.md with the standard sections and a changelog entry.",
+      "assertions": [
+        "README contains Compensation, Interview process, Questions reported, Sources, and Gaps sections",
+        "Every compensation figure and question has a source URL",
+        "Writes only inside companies/stripe/"
+      ]
+    }
+  ]
+}

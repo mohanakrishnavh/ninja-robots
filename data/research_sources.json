@@ -1,0 +1,19 @@
+{
+  "roles": ["Senior Software Engineer", "Forward Deployed Engineer"],
+  "top_company_count": 15,
+  "parallel_batch_size": 5,
+  "sources": {
+    "levels_leaderboard": "https://www.levels.fyi/leaderboard/Software-Engineer/Senior-Engineer/country/United-States/",
+    "levels_h1b": "https://www.levels.fyi/h1b/",
+    "levels_2025_report": "https://www.levels.fyi/2025/",
+    "leetcode_discuss": "https://leetcode.com/discuss/",
+    "leetcode_discuss_search_queries": [
+      "{company} senior software engineer",
+      "{company} forward deployed engineer",
+      "{company} onsite",
+      "{company} interview experience"
+    ]
+  },
+  "interview_prep_repo": "~/Repos/interview-prep",
+  "companies_dir": "companies"
+}
