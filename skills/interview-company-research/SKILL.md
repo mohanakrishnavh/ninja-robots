@@ -16,7 +16,7 @@ Fan-out/fan-in over the `interview-company-researcher` agent (`agents/interview-
 
 1. **Rank (one agent / inline).** Fetch (via the Arc helper) the levels.fyi Senior Engineer US leaderboard, then cross-check with `/h1b/` and `/2025/`. Write `Companies/_ranking.md` (rank, company, median TC, H1B senior base range, source dates). Take the top `top_company_count` companies, plus any company already having a folder in `Companies/`.
 2. **Fan out.** Spawn one `interview-company-researcher` agent per company, `parallel_batch_size` at a time (all calls of a batch in a single message, `subagent_type: interview-company-researcher`). Each gets: company name, slug, repo path, its ranking row. Agents write only to their own `Companies/<slug>/`, so there are no write conflicts. Wait for each batch before the next.
-3. **Fan in.** Regenerate `Companies/INDEX.md` (table: rank, company, median TC, last updated, link). Add a `## Run log` entry to `Companies/_ranking.md` with date, companies covered, and aggregated "Gaps" from agent reports.
+3. **Fan in.** Regenerate `Companies/INDEX.md` with `python3 -m clients.company_index`. Add a `## Run log` entry to `Companies/_ranking.md` with date, companies covered, and aggregated "Gaps" from agent reports.
 4. **Publish.** In the interview-prep repo: `git add companies && git commit -m "research: weekly company refresh YYYY-MM-DD"` and push to `main`. Only stage `Companies/`.
 
 ## Rules
