@@ -1,8 +1,8 @@
 """Mirror Striver's A2Z DSA sheet into a local Code/ folder and track progress.
 
 A problem counts as *solved* when its folder holds at least one file other than the
-README/NOTES stubs, and as *noted* when it has a NOTES.md. Everything is derived from the
-filesystem, so progress needs no separate bookkeeping.
+README/NOTES stubs, or when the user marked it done in the app (Code/progress.json). It is
+*noted* when it has a NOTES.md. Notes are only generated for problems that have code files.
 """
 from __future__ import annotations
 
@@ -35,10 +35,15 @@ class Problem:
 class Status:
     solutions: List[str] = field(default_factory=list)
     has_notes: bool = False
+    marked: bool = False  # marked done in the app, with or without code
+
+    @property
+    def has_code(self) -> bool:
+        return bool(self.solutions)
 
     @property
     def solved(self) -> bool:
-        return bool(self.solutions)
+        return self.has_code or self.marked
 
 
 def slugify(text: str) -> str:
@@ -77,12 +82,22 @@ def flatten(syllabus: list, url_template: str) -> List[Problem]:
     return out
 
 
+def load_marks(code_root: Path) -> set:
+    """Ids the user marked done in the app (Code/progress.json); empty if the file is missing or invalid."""
+    try:
+        data = json.loads((code_root / "progress.json").read_text())
+    except (OSError, ValueError):
+        return set()
+    return {int(k) for k, v in data.items() if isinstance(v, dict) and v.get("done")}
+
+
 def scan(code_root: Path, problems: Iterable[Problem], ignored_files=("README.md", "NOTES.md", ".DS_Store"),
          ignored_dirs=("assets",)) -> Dict[int, Status]:
     status: Dict[int, Status] = {}
+    marks = load_marks(code_root)
     for p in problems:
         d = code_root / p.rel_dir
-        st = Status()
+        st = Status(marked=p.id in marks)
         if d.is_dir():
             for f in sorted(d.iterdir()):
                 if f.is_file() and f.name not in ignored_files:
@@ -93,8 +108,8 @@ def scan(code_root: Path, problems: Iterable[Problem], ignored_files=("README.md
 
 
 def missing_notes(problems: Iterable[Problem], status: Dict[int, Status]) -> List[Problem]:
-    """Practice problems that have solution code but no NOTES.md."""
-    return [p for p in problems if p.kind == "practice" and status[p.id].solved and not status[p.id].has_notes]
+    """Practice problems that have solution code but no NOTES.md (marked-only problems have nothing to document)."""
+    return [p for p in problems if p.kind == "practice" and status[p.id].has_code and not status[p.id].has_notes]
 
 
 def start_problem(code_root: Path, p: Problem) -> Path:

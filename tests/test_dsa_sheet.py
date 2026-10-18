@@ -30,3 +30,12 @@ def test_scan_and_missing_notes(tmp_path: Path):
 def test_sync_writes_index(tmp_path: Path):
     ds.sync(tmp_path, SYL, TPL)
     assert (tmp_path / "sheet.json").is_file() and "Two Sum" in (tmp_path / "README.md").read_text()
+
+
+def test_marked_counts_as_solved_but_needs_no_notes(tmp_path: Path):
+    probs = ds.flatten(SYL, TPL)
+    (tmp_path / "progress.json").write_text('{"10": {"done": true}}')
+    st = ds.scan(tmp_path, probs)
+    assert st[10].solved and not st[10].has_code
+    assert ds.missing_notes(probs, st) == []
+    assert "✍️" in ds.render_readme(probs, st)
