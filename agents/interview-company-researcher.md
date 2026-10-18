@@ -53,6 +53,14 @@ What could not be found or accessed, and why.
 
 Also write `Companies/<slug>/changelog.md` — append one dated line summarising what changed this run (new questions, comp changes).
 
+## Unranked companies (e.g. FAANG)
+
+If the company is NOT a row in `Companies/_ranking.md`, also write `Companies/<slug>/summary.json` so the app can show it. Use the levels.fyi company page's average for the senior level (state which level in `level`), numbers in USD per year, `null` for unknown:
+
+```json
+{"name": "Meta", "level": "E5 (Senior)", "total": 0, "base": 0, "stock": 0, "bonus": 0, "source": "<url>", "as_of": "YYYY-MM-DD"}
+```
+
 ## Quality bar
 
 - Every number and question carries a source link. If sources conflict, show both. If you could not verify something, say so rather than estimating.
