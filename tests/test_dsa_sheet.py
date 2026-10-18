@@ -1,3 +1,4 @@
+import sqlite3
 from pathlib import Path
 
 from clients import dsa_sheet as ds
@@ -34,8 +35,26 @@ def test_sync_writes_index(tmp_path: Path):
 
 def test_marked_counts_as_solved_but_needs_no_notes(tmp_path: Path):
     probs = ds.flatten(SYL, TPL)
-    (tmp_path / "progress.json").write_text('{"10": {"done": true}}')
+    _make_db(tmp_path, [10])
     st = ds.scan(tmp_path, probs)
     assert st[10].solved and not st[10].has_code
     assert ds.missing_notes(probs, st) == []
     assert "✍️" in ds.render_readme(probs, st)
+
+
+def _make_db(root: Path, ids):
+    conn = sqlite3.connect(root / "progress.db")
+    conn.execute("CREATE TABLE progress (problem_id INTEGER PRIMARY KEY, done_at TEXT NOT NULL)")
+    conn.executemany("INSERT INTO progress VALUES (?, '2026-01-01T00:00:00Z')", [(i,) for i in ids])
+    conn.commit()
+    conn.close()
+
+
+def test_theory_read_mark_and_missing_db(tmp_path: Path):
+    probs = ds.flatten(SYL, TPL)
+    assert ds.load_marks(tmp_path) == set()  # no db yet, and none is created
+    assert not (tmp_path / "progress.db").exists()
+    _make_db(tmp_path, [11])
+    st = ds.scan(tmp_path, probs)
+    assert st[11].marked and not st[10].marked
+    assert "☑️" in ds.render_readme(probs, st)

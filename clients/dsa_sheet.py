@@ -1,13 +1,14 @@
 """Mirror Striver's A2Z DSA sheet into a local Code/ folder and track progress.
 
 A problem counts as *solved* when its folder holds at least one file other than the
-README/NOTES stubs, or when the user marked it done in the app (Code/progress.json). It is
+README/NOTES stubs, or when the user marked it done in the app (Code/progress.db, a SQLite file checked in with the repo). It is
 *noted* when it has a NOTES.md. Notes are only generated for problems that have code files.
 """
 from __future__ import annotations
 
 import json
 import re
+import sqlite3
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Dict, Iterable, List, Optional
@@ -83,12 +84,18 @@ def flatten(syllabus: list, url_template: str) -> List[Problem]:
 
 
 def load_marks(code_root: Path) -> set:
-    """Ids the user marked done in the app (Code/progress.json); empty if the file is missing or invalid."""
-    try:
-        data = json.loads((code_root / "progress.json").read_text())
-    except (OSError, ValueError):
+    """Problem ids marked done in the app (rows of Code/progress.db); empty if the file is missing or unreadable."""
+    db = code_root / "progress.db"
+    if not db.is_file():
         return set()
-    return {int(k) for k, v in data.items() if isinstance(v, dict) and v.get("done")}
+    try:
+        conn = sqlite3.connect(f"file:{db}?mode=ro", uri=True)
+        try:
+            return {row[0] for row in conn.execute("SELECT problem_id FROM progress")}
+        finally:
+            conn.close()
+    except sqlite3.Error:
+        return set()
 
 
 def scan(code_root: Path, problems: Iterable[Problem], ignored_files=("README.md", "NOTES.md", ".DS_Store"),
@@ -130,7 +137,7 @@ def render_readme(problems: List[Problem], status: Dict[int, Status]) -> str:
     noted = sum(status[p.id].has_notes for p in practice)
     lines = ["# Code — Striver's A2Z DSA Sheet", "",
              f"**Solved:** {solved} / {len(practice)} · **With notes:** {noted} · generated from `sheet.json`", "",
-             "Legend: ✅ solved + notes · ✍️ solved, notes missing · ⬜ not started · 📖 theory", ""]
+             "Legend: ✅ solved + notes · ✍️ solved, notes missing · ⬜ not started · 📖 reading · ☑️ read", ""]
     last: Optional[tuple] = None
     for p in problems:
         trail = tuple(l for _, l in p.path)
@@ -142,7 +149,7 @@ def render_readme(problems: List[Problem], status: Dict[int, Status]) -> str:
             lines.append("")
             last = trail
         st = status[p.id]
-        mark = "📖" if p.kind == "theory" else "✅" if st.has_notes and st.solved else "✍️" if st.solved else "⬜"
+        mark = ("☑️" if st.marked else "📖") if p.kind == "theory" else "✅" if st.has_notes and st.solved else "✍️" if st.solved else "⬜"
         link = f"[{p.label}]({p.url})"
         local = f" · [code](./{p.rel_dir}/)" if (st.solved or st.has_notes) else ""
         lines.append(f"- {mark} {link}{local}")

@@ -7,7 +7,7 @@ description: On-demand tracker for Striver's A2Z DSA sheet in the interview-prep
 
 Code lives in `~/Repos/interview-prep/Code/` (clone `https://github.com/mohanakrishnavh/interview-prep.git` if missing; `git pull --ff-only` first). Helper CLI, run from the ninja-robots repo root: `python3 -m clients.dsa_sheet <command>`. Config: `data/dsa_sheet_sources.json`.
 
-Layout: `Code/sheet.json` (the sheet), `Code/README.md` (generated index with ✅/✍️/⬜ per problem), and one folder per problem `Code/<NN-section>/<topic>/<NN-problem>/` holding the user's solution files, an optional `README.md` stub, and `NOTES.md`. **Solved** = any file besides README/NOTES in the folder, or marked done in the app (`Code/progress.json`; marked-only problems get no notes since there is no code). **Noted** = `NOTES.md` exists.
+Layout: `Code/sheet.json` (the sheet), `Code/README.md` (generated index with ✅/✍️/⬜ per problem), and one folder per problem `Code/<NN-section>/<topic>/<NN-problem>/` holding the user's solution files, an optional `README.md` stub, and `NOTES.md`. **Solved** = any file besides README/NOTES in the folder, or marked done in the app (`Code/progress.db` (SQLite, checked in); marked-only problems get no notes since there is no code). **Noted** = `NOTES.md` exists.
 
 ## Commands
 
