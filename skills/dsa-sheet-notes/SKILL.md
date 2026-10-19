@@ -19,7 +19,7 @@ Layout: `Code/sheet.json` (the sheet), `Code/README.md` (generated index with âœ
   4. In interview-prep: `git add Code && git commit -m "dsa: notes for <n> problems"` and push. Stage only `Code/`.
   5. Report: problems noted, any "Review" findings agents raised about the user's code.
 - **Re-notes**: if the user asks to regenerate a problem's notes (or the solution changed), delete that `NOTES.md` first, then run the flow.
-- **Sync the sheet** (the sheet changed upstream): `python3 -m clients.dsa_sheet sync` fetches it through the user's signed-in Arc (`clients/arc_browser.py`; no credentials handled). Existing solution folders are untouched; rename detection isn't automatic, so check `git status` after.
+- **Sync the sheet** (the sheet changed upstream): `python3 -m clients.dsa_sheet sync` fetches it (and each problem's YouTube, article and LeetCode links) through a dedicated background window in the user's signed-in Arc (`clients/arc_browser.py`; no credentials handled; focus is handed back to the app in front). Existing solution folders are untouched; rename detection isn't automatic, so check `git status` after.
 
 ## Rules
 

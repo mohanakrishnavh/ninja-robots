@@ -58,3 +58,11 @@ def test_theory_read_mark_and_missing_db(tmp_path: Path):
     st = ds.scan(tmp_path, probs)
     assert st[11].marked and not st[10].marked
     assert "☑️" in ds.render_readme(probs, st)
+
+
+def test_sync_stores_links(tmp_path: Path):
+    links = {10: {"youtube": "https://youtu.be/x", "article": "https://t/blog", "leetcode": None, "duration": "5 min"}}
+    ds.sync(tmp_path, SYL, TPL, links)
+    rows = {r["id"]: r for r in __import__("json").loads((tmp_path / "sheet.json").read_text())}
+    assert rows[10]["youtube"] == "https://youtu.be/x" and rows[10]["duration"] == "5 min" and "leetcode" not in rows[10]
+    assert "youtube" not in rows[11]

@@ -120,9 +120,17 @@ def _in_any_window(tab_id: str, action: str) -> str:
     )
 
 
-def tab_js(tab_id: str, js: str, run: Runner = run_applescript) -> str:
-    """Execute JavaScript in the tab with the given id and return the result."""
-    return run(_in_any_window(tab_id, f"return execute javascript {_q(js)}"))
+def tab_js(tab_id: str, js: str, run: Runner = run_applescript, retries: int = 2) -> str:
+    """Execute JavaScript in the tab with the given id and return the result.
+
+    Reads are idempotent, so a timed-out call (background tabs can stall briefly) is retried."""
+    for attempt in range(retries + 1):
+        try:
+            return run(_in_any_window(tab_id, f"return execute javascript {_q(js)}"))
+        except subprocess.TimeoutExpired:
+            if attempt == retries:
+                raise
+    raise AssertionError("unreachable")
 
 
 def close_tab(tab_id: str, run: Runner = run_applescript) -> None:
@@ -161,7 +169,7 @@ def fetch_json_via_page(
     run: Runner = run_applescript,
     sleep: Callable[[float], None] = time.sleep,
     settle_seconds: float = 6.0,
-    chunk: int = 40000,
+    chunk: int = 120000,
     polls: int = 20,
     init: Optional[dict] = None,
 ) -> str:

@@ -156,13 +156,21 @@ def render_readme(problems: List[Problem], status: Dict[int, Status]) -> str:
     return "\n".join(lines) + "\n"
 
 
-def sync(code_root: Path, syllabus: list, url_template: str) -> List[Problem]:
-    """Write sheet.json + README.md under code_root from a fetched syllabus; keep user files."""
+def sync(code_root: Path, syllabus: list, url_template: str, links: Optional[Dict[int, dict]] = None) -> List[Problem]:
+    """Write sheet.json + README.md under code_root from a fetched syllabus; keep user files.
+
+    links (from clients.sheet_links) adds each problem's YouTube, article and LeetCode URLs plus duration."""
     problems = flatten(syllabus, url_template)
     code_root.mkdir(parents=True, exist_ok=True)
-    (code_root / "sheet.json").write_text(json.dumps(
-        [{"id": p.id, "slug": p.slug, "label": p.label, "kind": p.kind, "dir": p.rel_dir, "url": p.url,
-          "sections": [l for _, l in p.path]} for p in problems], indent=1) + "\n")
+    links = links or {}
+
+    def row(p: Problem) -> dict:
+        r = {"id": p.id, "slug": p.slug, "label": p.label, "kind": p.kind, "dir": p.rel_dir, "url": p.url,
+             "sections": [l for _, l in p.path]}
+        r.update({k: v for k, v in (links.get(p.id) or {}).items() if k in ("youtube", "article", "leetcode", "duration") and v})
+        return r
+
+    (code_root / "sheet.json").write_text(json.dumps([row(p) for p in problems], indent=1) + "\n")
     (code_root / "README.md").write_text(render_readme(problems, scan(code_root, problems)))
     return problems
 
@@ -185,13 +193,17 @@ def main(argv: Optional[List[str]] = None) -> int:
     cfg = load_config()
     root = a.code_root or Path(cfg["interview_prep_repo"]).expanduser() / cfg["code_dir"]
     if a.command == "sync":
+        links = None
         if a.from_file:
             syllabus = json.loads(a.from_file.read_text())
         else:
             from clients.arc_browser import fetch_json_via_page
 
             syllabus = json.loads(fetch_json_via_page(cfg["sheet_page_url"], cfg["sheet_api_url"]))["data"]["syllabus"]
-        probs = sync(root, syllabus, cfg["problem_url_template"])
+            from clients.sheet_links import fetch_links
+
+            links = fetch_links(cfg["sheet_page_url"])
+        probs = sync(root, syllabus, cfg["problem_url_template"], links)
         print(f"synced {len(probs)} items into {root}")
         return 0
     probs = load_problems(root)
