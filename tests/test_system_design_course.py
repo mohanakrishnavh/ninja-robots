@@ -8,7 +8,7 @@ def page(i, title, slug, preview=False):
     return {"page_id": i, "title": title, "slug": slug, "is_preview": preview, "type": "collection_lesson"}
 
 
-DATA = {"instance": {"details": {"title": "Grokking Test", "toc": {"categories": [
+DATA = {"instance": {"details": {"title": "Grokking Modern Test", "toc": {"categories": [
     {"id": "a", "title": "Introduction", "type": "COLLECTION_CATEGORY", "pages": [page(1, "Intro  to Design", "intro", True)]},
     {"id": "b", "title": "Building Blocks", "type": "COLLECTION_CATEGORY", "pages": [page(2, "Load Balancers", "load-balancers"), page(3, "DNS", "dns")]},
     {"id": "cache-mock", "title": "Distributed Cache System Design", "type": "LINKED_MOCK_INTERVIEW", "pages": []},
@@ -45,3 +45,9 @@ def test_marks_and_readme_progress(tmp_path: Path):
     conn.close()
     md = sd.render_readme(c, sd.load_marks(tmp_path))
     assert "**Done:** 1 / 5" in md and "☑️ [Load Balancers]" in md and "⬜ [DNS]" in md
+
+
+def test_course_title_drops_grokking_prefix():
+    assert sd.parse_collection(DATA)["title"] == "Modern Test"
+    assert sd.display_title("Grokking  the System Design Interview") == "the System Design Interview"
+    assert sd.display_title("System Design Basics") == "System Design Basics"

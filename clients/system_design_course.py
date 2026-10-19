@@ -36,6 +36,11 @@ def _clean(title: str) -> str:
     return re.sub(r"\s+", " ", title).strip()
 
 
+def display_title(title: str) -> str:
+    """Course title without the "Grokking" brand prefix (e.g. "Grokking Modern System Design Interview")."""
+    return re.sub(r"^grokking\s+", "", _clean(title), flags=re.I)
+
+
 def parse_collection(data: dict) -> dict:
     """Turn Educative's collection JSON into {title,url,parts:[{title,dir,modules:[{title,dir,lessons:[...]}]}]}."""
     details = data["instance"]["details"] if "instance" in data else data["details"]
@@ -64,7 +69,7 @@ def parse_collection(data: dict) -> dict:
             mod["dir"] = f"{part['dir']}/{mi:02d}-{mod['id']}"
             for li, les in enumerate(mod["lessons"], 1):
                 les["dir"] = f"{mod['dir']}/{li:02d}-{slugify(les['title'])[:60]}"
-    return {"title": _clean(details.get("title", "System design course")), "slug": COURSE_SLUG, "url": COURSE_URL, "parts": parts}
+    return {"title": display_title(details.get("title", "System design course")), "slug": COURSE_SLUG, "url": COURSE_URL, "parts": parts}
 
 
 def lessons_of(course: dict):
