@@ -12,6 +12,7 @@ Layout: `Code/sheet.json` (the sheet), `Code/README.md` (generated index with âœ
 ## Commands
 
 - **Start a problem** ("start two-sum"): `python3 -m clients.dsa_sheet start <slug-or-id>` creates the folder + README stub; tell the user the path.
+- **Scaffold folders**: `python3 -m clients.dsa_sheet scaffold` creates a folder with a README stub (links to video, article, LeetCode) for every practice problem. It writes only README stubs, never solution files, because any other file would count as solved. Run it after `sync` to pick up new problems.
 - **Write notes** (the main on-demand flow):
   1. `python3 -m clients.dsa_sheet missing` lists solved problems with no `NOTES.md` (id, folder, label, files). If none, say so and stop.
   2. Spawn one `dsa-notes-writer` agent per problem (all calls of a batch in one message; batches of 5), passing the folder, label, and link. Agents write only in their folder.

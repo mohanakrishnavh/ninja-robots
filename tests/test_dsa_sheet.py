@@ -75,3 +75,14 @@ def test_sync_revalidates_links_at_the_sink(tmp_path: Path):
     row = {r["id"]: r for r in __import__("json").loads((tmp_path / "sheet.json").read_text())}[10]
     assert row.get("article") == "https://takeuforward.org/blogs/a"
     assert not any(k in row for k in ("youtube", "leetcode", "duration"))
+
+
+def test_scaffold_creates_readme_only_folders_for_practice(tmp_path: Path):
+    ds.sync(tmp_path, SYL, TPL, {10: {"youtube": "https://youtu.be/x", "leetcode": "https://leetcode.com/problems/two-sum/"}})
+    probs = ds.load_problems(tmp_path)
+    assert ds.scaffold(tmp_path, probs) == 1 and ds.scaffold(tmp_path, probs) == 0  # idempotent
+    folder = tmp_path / probs[0].rel_dir
+    assert [f.name for f in folder.iterdir()] == ["README.md"]
+    assert "https://youtu.be/x" in (folder / "README.md").read_text()
+    assert not (tmp_path / probs[1].rel_dir).exists()  # theory items get no folder
+    assert not ds.scan(tmp_path, probs)[10].solved  # a stub is not a solution

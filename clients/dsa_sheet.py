@@ -30,6 +30,7 @@ class Problem:
     order: int
     url: str
     rel_dir: str = ""
+    links: dict = field(default_factory=dict)  # youtube / article / leetcode / duration, when known
 
 
 @dataclass
@@ -119,16 +120,38 @@ def missing_notes(problems: Iterable[Problem], status: Dict[int, Status]) -> Lis
     return [p for p in problems if p.kind == "practice" and status[p.id].has_code and not status[p.id].has_notes]
 
 
+def stub_text(p: Problem) -> str:
+    trail = " › ".join(label for _, label in p.path)
+    lines = [f"# {p.label.strip()}", "", f"- Sheet: {trail}"]
+    names = (("youtube", "Video"), ("article", "Article"), ("leetcode", "LeetCode"))
+    lines += [f"- {n}: {p.links[k]}" for k, n in names if p.links.get(k)]
+    lines += [f"- takeUforward: {p.url}", "",
+              "Put your solution file(s) in this folder (any language). Ask Claude to \"write DSA notes\" to generate `NOTES.md`.", ""]
+    return "\n".join(lines)
+
+
 def start_problem(code_root: Path, p: Problem) -> Path:
     """Create the problem folder with a README stub (idempotent). Returns the folder."""
     d = code_root / p.rel_dir
     d.mkdir(parents=True, exist_ok=True)
     readme = d / "README.md"
     if not readme.exists():
-        trail = " › ".join(label for _, label in p.path)
-        readme.write_text(f"# {p.label}\n\n- Sheet: {trail}\n- Link: {p.url}\n\nPut your solution file(s) in this folder "
-                          f"(any language). Ask Claude to \"write DSA notes\" to generate `NOTES.md`.\n")
+        readme.write_text(stub_text(p))
     return d
+
+
+def scaffold(code_root: Path, problems: Iterable[Problem]) -> int:
+    """Create a folder (with README stub) for every practice problem; returns how many were new.
+
+    Only README stubs are written, never solution files: any other file would count as "solved"."""
+    created = 0
+    for p in problems:
+        if p.kind != "practice":
+            continue
+        if not (code_root / p.rel_dir / "README.md").exists():
+            created += 1
+        start_problem(code_root, p)
+    return created
 
 
 def render_readme(problems: List[Problem], status: Dict[int, Status]) -> str:
@@ -186,7 +209,9 @@ def sync(code_root: Path, syllabus: list, url_template: str, links: Optional[Dic
 
 def load_problems(code_root: Path) -> List[Problem]:
     rows = json.loads((code_root / "sheet.json").read_text())
-    return [Problem(r["id"], r["slug"], r["label"], r["kind"], [(slugify(s), s) for s in r["sections"]], 0, r["url"], r["dir"])
+    keys = ("youtube", "article", "leetcode", "duration")
+    return [Problem(r["id"], r["slug"], r["label"], r["kind"], [(slugify(s), s) for s in r["sections"]], 0, r["url"], r["dir"],
+                    {k: r[k] for k in keys if k in r})
             for r in rows]
 
 
@@ -194,7 +219,7 @@ def main(argv: Optional[List[str]] = None) -> int:
     import argparse
 
     ap = argparse.ArgumentParser(prog="dsa_sheet")
-    ap.add_argument("command", choices=["sync", "refresh", "missing", "start"])
+    ap.add_argument("command", choices=["sync", "refresh", "missing", "start", "scaffold"])
     ap.add_argument("name", nargs="?", help="problem slug or id for 'start'")
     ap.add_argument("--code-root", type=Path)
     ap.add_argument("--from-file", type=Path, help="syllabus JSON (the 'data.syllabus' list) instead of fetching via Arc")
@@ -223,6 +248,8 @@ def main(argv: Optional[List[str]] = None) -> int:
     elif a.command == "missing":
         for p in missing_notes(probs, st):
             print(f"{p.id}\t{p.rel_dir}\t{p.label}\t{','.join(st[p.id].solutions)}")
+    elif a.command == "scaffold":
+        print(f"created {scaffold(root, probs)} problem folders under {root}")
     elif a.command == "start":
         match = [p for p in probs if a.name in (p.slug, str(p.id))]
         if not match:
