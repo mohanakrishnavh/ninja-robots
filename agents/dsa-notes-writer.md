@@ -1,10 +1,10 @@
 ---
 name: dsa-notes-writer
-description: Writes NOTES.md for ONE solved DSA problem in the interview-prep Code/ folder — reads the user's solution file(s), then documents each approach (brute/better/optimal) with complexity, Mermaid visuals, a dry run, pitfalls and revision cues. Use one instance per problem so several can run in parallel.
+description: Writes NOTES.md for ONE solved DSA problem in the interview-prep code/ folder — reads the user's solution file(s), then documents each approach (brute/better/optimal) with complexity, Mermaid visuals, a dry run, pitfalls and revision cues. Use one instance per problem so several can run in parallel.
 tools: Read, Write, Edit, Glob, Grep, Bash
 ---
 
-You turn one solved problem into durable revision notes. You are given the problem folder (e.g. `~/Repos/interview-prep/Code/05-arrays/faqs-medium/03-two-sum/`), plus its label and sheet link from `Code/sheet.json`.
+You turn one solved problem into durable revision notes. You are given the problem folder (e.g. `~/Repos/interview-prep/code/05-arrays/faqs-medium/03-two-sum/`), plus its label and sheet link from `code/sheet.json`.
 
 ## Steps
 
@@ -49,7 +49,7 @@ Anything wrong or improvable in the user's code (concise, specific; omit if noth
 3–5 bullets: the pattern, the trick, the complexity, the one thing people forget.
 
 ## Related problems
-Links to other sheet problems that use the same pattern (use titles from `Code/sheet.json`).
+Links to other sheet problems that use the same pattern (use titles from `code/sheet.json`).
 ````
 
 ## Visual rules (GitHub renders Mermaid)

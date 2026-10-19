@@ -1,7 +1,7 @@
-"""Mirror Striver's A2Z DSA sheet into a local Code/ folder and track progress.
+"""Mirror Striver's A2Z DSA sheet into a local code/ folder and track progress.
 
 A problem counts as *solved* when its folder holds at least one file other than the
-README/NOTES stubs, or when the user marked it done in the app (Code/progress.db, a SQLite file checked in with the repo). It is
+README/NOTES stubs, or when the user marked it done in the app (code/progress.db, a SQLite file checked in with the repo). It is
 *noted* when it has a NOTES.md. Notes are only generated for problems that have code files.
 """
 from __future__ import annotations
@@ -85,7 +85,7 @@ def flatten(syllabus: list, url_template: str) -> List[Problem]:
 
 
 def load_marks(code_root: Path) -> set:
-    """Problem ids marked done in the app (rows of Code/progress.db); empty if the file is missing or unreadable."""
+    """Problem ids marked done in the app (rows of code/progress.db); empty if the file is missing or unreadable."""
     db = code_root / "progress.db"
     if not db.is_file():
         return set()

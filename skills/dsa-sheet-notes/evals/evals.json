@@ -4,12 +4,12 @@
     {
       "id": 1,
       "prompt": "I solved a few problems this week, write the DSA notes.",
-      "expected_output": "Lists solved problems missing NOTES.md, spawns one dsa-notes-writer per problem, refreshes Code/README.md, commits only Code/.",
+      "expected_output": "Lists solved problems missing NOTES.md, spawns one dsa-notes-writer per problem, refreshes code/README.md, commits only code/.",
       "assertions": [
         "Runs `python3 -m clients.dsa_sheet missing` before spawning agents",
         "Spawns dsa-notes-writer agents, up to 5 per batch",
         "Never modifies the user's solution files",
-        "Stages only the Code/ directory when committing"
+        "Stages only the code/ directory when committing"
       ]
     },
     {

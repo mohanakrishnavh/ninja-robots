@@ -1,6 +1,6 @@
-"""Regenerate Companies/INDEX.md in the interview-prep repo from _ranking.md and per-company folders.
+"""Regenerate companies/INDEX.md in the interview-prep repo from _ranking.md and per-company folders.
 
-Ranked companies come from the table in Companies/_ranking.md. Companies with a folder but no ranking
+Ranked companies come from the table in companies/_ranking.md. Companies with a folder but no ranking
 row (e.g. FAANG) are listed separately using their summary.json.
 """
 from __future__ import annotations
@@ -59,7 +59,7 @@ def main(argv: Optional[List[str]] = None) -> int:
     import argparse
 
     ap = argparse.ArgumentParser(prog="company_index")
-    ap.add_argument("--companies-dir", type=Path, default=Path("~/Repos/interview-prep/Companies").expanduser())
+    ap.add_argument("--companies-dir", type=Path, default=Path("~/Repos/interview-prep/companies").expanduser())
     a = ap.parse_args(argv)
     (a.companies_dir / "INDEX.md").write_text(render(a.companies_dir))
     print(f"wrote {a.companies_dir / 'INDEX.md'}")
