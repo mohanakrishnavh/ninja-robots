@@ -167,7 +167,16 @@ def sync(code_root: Path, syllabus: list, url_template: str, links: Optional[Dic
     def row(p: Problem) -> dict:
         r = {"id": p.id, "slug": p.slug, "label": p.label, "kind": p.kind, "dir": p.rel_dir, "url": p.url,
              "sections": [l for _, l in p.path]}
-        r.update({k: v for k, v in (links.get(p.id) or {}).items() if k in ("youtube", "article", "leetcode", "duration") and v})
+        from clients.sheet_links import clean_duration, clean_link
+
+        got = links.get(p.id) or {}
+        for k in ("youtube", "article", "leetcode"):  # re-validate at the sink: sheet.json is consumed by the app
+            v = clean_link(k, got.get(k))
+            if v:
+                r[k] = v
+        d = clean_duration(got.get("duration"))
+        if d:
+            r["duration"] = d
         return r
 
     (code_root / "sheet.json").write_text(json.dumps([row(p) for p in problems], indent=1) + "\n")

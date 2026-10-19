@@ -10,8 +10,32 @@ from __future__ import annotations
 import json
 import re
 from typing import Dict, Optional
+from urllib.parse import urlparse
 
 SITE = "https://takeuforward.org"
+# Scraped values are untrusted: only https links to these exact hosts are kept, and duration must look like "17 min".
+ALLOWED_HOSTS = {
+    "youtube": {"youtu.be", "youtube.com", "www.youtube.com", "m.youtube.com"},
+    "article": {"takeuforward.org", "www.takeuforward.org"},
+    "leetcode": {"leetcode.com", "www.leetcode.com"},
+}
+_DURATION = re.compile(r"\d{1,3} min")
+
+
+def clean_link(kind: str, url: object) -> Optional[str]:
+    """Return url if it is an https link with credentials-free, allow-listed host for this kind; else None."""
+    if not isinstance(url, str) or len(url) > 300:
+        return None
+    try:
+        u = urlparse(url)
+    except ValueError:
+        return None
+    ok = u.scheme == "https" and u.hostname in ALLOWED_HOSTS.get(kind, set()) and not u.username and not u.password
+    return url if ok else None
+
+
+def clean_duration(value: object) -> Optional[str]:
+    return value if isinstance(value, str) and _DURATION.fullmatch(value) else None
 _START = re.compile(r'\[\d+,(\d+),"([^"]+)","item","(\w+)",')
 
 
@@ -54,8 +78,9 @@ def parse_links(page_html: str) -> Dict[int, dict]:
         article = next((v for v in tail if isinstance(v, str) and v.startswith("/blogs/")), None)
         leetcode = next((v for v in tail if isinstance(v, str) and v.startswith("http") and v != youtube), None)
         duration = arr[d - 1] if d >= 6 and isinstance(arr[d - 1], str) else None
-        out[int(m.group(1))] = {"slug": m.group(2), "layout": m.group(3), "youtube": youtube,
-                                "article": SITE + article if article else None, "leetcode": leetcode, "duration": duration}
+        out[int(m.group(1))] = {"slug": m.group(2), "layout": m.group(3), "youtube": clean_link("youtube", youtube),
+                                "article": clean_link("article", SITE + article if article else None),
+                                "leetcode": clean_link("leetcode", leetcode), "duration": clean_duration(duration)}
     return out
 
 

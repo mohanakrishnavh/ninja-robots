@@ -66,3 +66,12 @@ def test_sync_stores_links(tmp_path: Path):
     rows = {r["id"]: r for r in __import__("json").loads((tmp_path / "sheet.json").read_text())}
     assert rows[10]["youtube"] == "https://youtu.be/x" and rows[10]["duration"] == "5 min" and "leetcode" not in rows[10]
     assert "youtube" not in rows[11]
+
+
+def test_sync_revalidates_links_at_the_sink(tmp_path: Path):
+    links = {10: {"youtube": "https://evil.example/x", "article": "https://takeuforward.org/blogs/a",
+                  "leetcode": "javascript:alert(1)", "duration": "<b>x</b>"}}
+    ds.sync(tmp_path, SYL, TPL, links)
+    row = {r["id"]: r for r in __import__("json").loads((tmp_path / "sheet.json").read_text())}[10]
+    assert row.get("article") == "https://takeuforward.org/blogs/a"
+    assert not any(k in row for k in ("youtube", "leetcode", "duration"))
