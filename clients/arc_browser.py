@@ -4,10 +4,16 @@ No credentials are handled here: Arc already holds the user's sessions. Each cal
 opens its own tab, reads it, and closes it, so parallel callers don't collide.
 
 Requires: macOS, Arc running, and Automation permission for the calling app.
+
+Pages open in a dedicated Arc window (created on first use, reused afterwards), and whichever app
+was in front is brought back to the front right after, so this never takes over the user's screen.
 """
 from __future__ import annotations
 
+import contextlib
 import fcntl
+import os
+import re
 import subprocess
 import tempfile
 import time
@@ -15,6 +21,8 @@ from typing import Callable, Optional
 
 Runner = Callable[[str], str]
 _LOCK_PATH = tempfile.gettempdir() + "/arc_browser_open_tab.lock"
+WINDOW_FILE = tempfile.gettempdir() + "/arc_browser_window.id"  # id of the dedicated automation window
+KEEP_FOCUS = True  # hand focus back to the previously frontmost app after touching Arc
 
 _LOGIN_MARKERS = ("sign in to continue", "log in to continue", "verify you are human", "just a moment")
 
@@ -31,30 +39,94 @@ def _q(value: str) -> str:
     return '"' + value.replace("\\", "\\\\").replace('"', '\\"') + '"'
 
 
+def _front_app() -> Optional[str]:
+    """Name of the frontmost macOS app (via lsappinfo, no permissions needed), or None."""
+    try:
+        asn = subprocess.run(["lsappinfo", "front"], capture_output=True, text=True, timeout=5).stdout.strip()
+        out = subprocess.run(["lsappinfo", "info", "-only", "name", asn], capture_output=True, text=True, timeout=5).stdout
+        m = re.search(r'="(.*)"', out)
+        return m.group(1) if m else None
+    except (OSError, subprocess.SubprocessError):
+        return None
+
+
+@contextlib.contextmanager
+def _keep_focus():
+    """Give the screen back to whichever app was in front before we touched Arc."""
+    prev = _front_app() if KEEP_FOCUS else None
+    try:
+        yield
+    finally:
+        if prev and prev != "Arc":
+            time.sleep(0.2)  # Arc activates asynchronously after the script returns
+            subprocess.run(["open", "-a", prev], capture_output=True, check=False)
+
+
+def _window_id(run: Runner) -> str:
+    """Id of the dedicated Arc window, creating it if it is missing or was closed."""
+    try:
+        saved = open(WINDOW_FILE).read().strip()
+    except OSError:
+        saved = ""
+    if saved:
+        try:
+            run(f'tell application "Arc" to tell window id {_q(saved)} to return id of active tab')
+            return saved
+        except RuntimeError:
+            pass
+    wid = run('tell application "Arc"\nmake new window\nreturn id of front window\nend tell')
+    with open(WINDOW_FILE, "w") as f:
+        f.write(wid)
+    return wid
+
+
 def open_tab(url: str, run: Runner = run_applescript) -> str:
-    """Open url in a new Arc tab and return the tab id."""
-    # Arc can't return the id of a freshly made tab directly, so read it from the
-    # (just-activated) tab; a file lock keeps parallel callers from interleaving.
-    with open(_LOCK_PATH, "w") as lock:
+    """Open url in a new tab of the dedicated Arc window, in the background, and return the tab id."""
+    # Arc can't return the id of a freshly made tab directly, so read it from the window's active tab;
+    # a file lock keeps parallel callers from interleaving.
+    with open(_LOCK_PATH, "w") as lock, _keep_focus():
         fcntl.flock(lock, fcntl.LOCK_EX)
+        wid = _window_id(run)
         return run(
-            'tell application "Arc" to tell front window\n'
+            f'tell application "Arc" to tell window id {_q(wid)}\n'
             f"make new tab with properties {{URL:{_q(url)}}}\n"
             "return id of active tab\n"
             "end tell"
         )
 
 
-def tab_js(tab_id: str, js: str, run: Runner = run_applescript) -> str:
-    """Execute JavaScript in the tab with the given id and return the result."""
-    return run(
-        f'tell application "Arc" to tell front window to tell tab id {_q(tab_id)} '
-        f"to return execute javascript {_q(js)}"
+def close_window(run: Runner = run_applescript) -> None:
+    """Close the dedicated automation window, if any."""
+    try:
+        wid = open(WINDOW_FILE).read().strip()
+    except OSError:
+        return
+    with contextlib.suppress(RuntimeError, OSError):
+        run(f'tell application "Arc" to close window id {_q(wid)}')
+    with contextlib.suppress(OSError):
+        os.remove(WINDOW_FILE)
+
+
+def _in_any_window(tab_id: str, action: str) -> str:
+    """AppleScript that runs `action` on the tab with this id, whichever Arc window currently holds it."""
+    return (
+        'tell application "Arc"\n'
+        "repeat with w in windows\n"
+        "try\n"
+        f"tell w to tell tab id {_q(tab_id)} to {action}\n"
+        "end try\n"
+        "end repeat\n"
+        "end tell"
     )
 
 
+def tab_js(tab_id: str, js: str, run: Runner = run_applescript) -> str:
+    """Execute JavaScript in the tab with the given id and return the result."""
+    return run(_in_any_window(tab_id, f"return execute javascript {_q(js)}"))
+
+
 def close_tab(tab_id: str, run: Runner = run_applescript) -> None:
-    run(f'tell application "Arc" to tell front window to tell tab id {_q(tab_id)} to close')
+    run(_in_any_window(tab_id, "close"))
 
 
 def looks_blocked(text: str) -> bool:
@@ -108,7 +180,7 @@ def fetch_json_via_page(
         length = -1
         for _ in range(polls):
             sleep(1.5)
-            length = int(tab_js(tab_id, "window.__r===null?-1:window.__r.length", run))
+            length = int(_unquote(tab_js(tab_id, "String(window.__r===null?-1:window.__r.length)", run)))
             if length >= 0:
                 break
         if length < 0:
@@ -137,8 +209,11 @@ def _unquote(raw: str) -> str:
     return raw
 
 
-if __name__ == "__main__":  # CLI: python -m clients.arc_browser <url>
+if __name__ == "__main__":  # CLI: python -m clients.arc_browser <url> | --close-window
     import sys
 
-    out = fetch_page_text(sys.argv[1])
-    print(out if out is not None else "BLOCKED: login wall, CAPTCHA, or bot check", file=sys.stdout)
+    if sys.argv[1:] == ["--close-window"]:
+        close_window()
+    else:
+        out = fetch_page_text(sys.argv[1])
+        print(out if out is not None else "BLOCKED: login wall, CAPTCHA, or bot check")
